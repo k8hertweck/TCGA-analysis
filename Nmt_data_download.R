@@ -32,33 +32,37 @@ sink()
 
 #### obtain variant calling + clinical data ####
 
-# download nucleotide variant data
-query_maf <- GDCquery_Maf("LUSC", directory = "GDCdata", pipelines = "mutect2", save.csv = TRUE)
-# use mutect2: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/DNA_Seq_Variant_Calling_Pipeline/#pipeline-descriptions
-
-# extract barcodes from maf query
-barcodes <- sort(query_maf$Tumor_Sample_Barcode) %>%
-  unique
-#str_trunc(barcodes, 12, side = "right", ellipsis = "")
-
-# download clinical data 
-clinical <- GDCquery_clinic(project = "TCGA-LUSC", type = "clinical")
-
-# extract barcodes from clinical data
-sub_id <- sort(clinical$submitter_id) %>%
-  unique()
-clinical <- rename(clinical, Tumor_Sample_Barcode = submitter_id)
-
-# create maf object with clinical data
-maf <- read.maf(query_maf, clinicalData = clinical, useAll = FALSE)
-# defaults to only somatic mutations
-
-#### summarize data ####
-
-# sample summary
-getSampleSummary(maf)
-# save maf data to file
-write.mafSummary(maf, basename = "LUSC")
+# function to download and format variant + clinical data
+create_maf <- function(cancer){
+  # download nucleotide variant data
+  query_maf <- GDCquery_Maf(paste(cancer), 
+                            directory = "GDCdata", 
+                            pipelines = "mutect2", save.csv = TRUE)
+  # use mutect2: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/DNA_Seq_Variant_Calling_Pipeline/#pipeline-descriptions 
+  
+  # extract barcodes from maf query
+  barcodes <- sort(query_maf$Tumor_Sample_Barcode) %>%
+    unique
+  #str_trunc(barcodes, 12, side = "right", ellipsis = "")
+  
+  # download clinical data 
+  clinical <- GDCquery_clinic(project = paste("TCGA", cancer, sep = "-"), 
+                              type = "clinical")
+  
+  # extract barcodes from clinical data
+  sub_id <- sort(clinical$submitter_id) %>%
+    unique()
+  clinical <- rename(clinical, Tumor_Sample_Barcode = submitter_id)
+  
+  # create maf object with clinical data
+  maf <- read.maf(query_maf, clinicalData = clinical, useAll = FALSE)
+  # defaults to only somatic mutations
+  
+  # save maf data to file
+  write.mafSummary(maf, basename = paste(cancer))
+  # sample summary
+  return(getSampleSummary(maf))
+}
 
 #### canned visualizations ####
 
