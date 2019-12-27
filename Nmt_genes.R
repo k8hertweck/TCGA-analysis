@@ -1,9 +1,9 @@
-#### mt gene extraction ####
+#### Nuclear-mitochondrial (N-mt) gene analysis ####
+
+library(maftools)
 
 # read in maf (variants + clinical)
 LUSC_maf <- read.maf("LUSC_maftools.maf")
-
-# mt genes
 
 # N-mt genes
 TOMM22, MFN1, MFN2 

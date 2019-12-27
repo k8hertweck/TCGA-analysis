@@ -41,9 +41,8 @@ sink()
 create_maf <- function(cancer){
   # download nucleotide variant data (if data already downloaded, reads in data)
   query_maf <- GDCquery_Maf(cancer, 
-                            directory = "GDCdata", 
-                            pipelines = "mutect2", 
-                            save.csv = TRUE)
+                            directory = "/GDCdata", 
+                            pipelines = "mutect2")
   # use mutect2: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/DNA_Seq_Variant_Calling_Pipeline/#pipeline-descriptions
 
   # extract barcodes from maf query
@@ -59,6 +58,8 @@ create_maf <- function(cancer){
   maf <- read.maf(query_maf, clinicalData = clinical, useAll = FALSE)
   # save maf data to file
   write.mafSummary(maf, basename = paste0("maf/", noquote(cancer)))
+  # move non-maf files data_summary
+  system("mv maf/*.txt data_summary/")
 
   # sample summary
   getSampleSummary(maf)
@@ -77,11 +78,15 @@ create_maf <- function(cancer){
   dev.off()
 }
 
-# test function
+#### Obtain data ####
+
+# execute one at a time because of size of file downloads
 create_maf("LUSC")
-
-#### apply function ####
-
-cancers <- c("LUSC", "PAAD", "BRCA", "PRAD", "READ", "COAD", "OV", "KIRC", "HNSC")
-
-
+create_maf("PAAD")
+create_maf("BRCA")
+create_maf("PRAD")
+create_maf("READ")
+create_maf("COAD")
+create_maf("OV")
+create_maf("KIRC")
+create_maf("HNSC")
