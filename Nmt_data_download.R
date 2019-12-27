@@ -6,6 +6,10 @@ library(TCGAbiolinks)
 library(maftools)
 library(tidyverse)
 
+# create directories for output
+dir.create("data_summary")
+dir.create("maf")
+
 #### assess data availability ####
 
 sink("data_summary/data_info.txt", append = TRUE)
@@ -34,44 +38,50 @@ sink()
 
 # define data download and assessment function
 
-# download nucleotide variant data (if data already downloaded, reads in data)
-query_maf <- GDCquery_Maf("LUSC", directory = "GDCdata", pipelines = "mutect2", save.csv = TRUE)
-# use mutect2: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/DNA_Seq_Variant_Calling_Pipeline/#pipeline-descriptions
+create_maf <- function(cancer){
+  # download nucleotide variant data (if data already downloaded, reads in data)
+  query_maf <- GDCquery_Maf(cancer, 
+                            directory = "GDCdata", 
+                            pipelines = "mutect2", 
+                            save.csv = TRUE)
+  # use mutect2: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/DNA_Seq_Variant_Calling_Pipeline/#pipeline-descriptions
 
-# extract barcodes from maf query
-barcodes <- sort(query_maf$Tumor_Sample_Barcode) %>%
-  unique
-# download clinical data 
-clinical <- GDCquery_clinic(project = "TCGA-LUSC", type = "clinical")
-# extract barcodes from clinical data
-sub_id <- sort(clinical$submitter_id) %>%
-  unique()
-clinical <- rename(clinical, Tumor_Sample_Barcode = submitter_id)
-# create maf object with clinical data (defaults to only somatic mutations)
-maf <- read.maf(query_maf, clinicalData = clinical, useAll = FALSE)
-# save maf data to file
-write.mafSummary(maf, basename = "maf/LUSC")
+  # extract barcodes from maf query
+  barcodes <- sort(query_maf$Tumor_Sample_Barcode) %>%
+    unique
+  # download clinical data 
+  clinical <- GDCquery_clinic(project = paste0("TCGA-", cancer), type = "clinical")
+  # extract barcodes from clinical data
+  sub_id <- sort(clinical$submitter_id) %>%
+    unique()
+  clinical <- rename(clinical, Tumor_Sample_Barcode = submitter_id)
+  # create maf object with clinical data (defaults to only somatic mutations)
+  maf <- read.maf(query_maf, clinicalData = clinical, useAll = FALSE)
+  # save maf data to file
+  write.mafSummary(maf, basename = paste0("maf/", noquote(cancer)))
 
-# sample summary
-getSampleSummary(maf)
-# maf summary plot
-jpeg("data_summary/LUSC_mafSummary.jpg")
-plotmafSummary(maf = maf, rmOutlier = TRUE, addStat = 'median', dashboard = TRUE)
-dev.off()
-# oncoplot
-jpeg("data_summary/LUSC_oncoplot.jpg")
-oncoplot(maf = maf, top = 10, removeNonMutated = TRUE)
-dev.off()
-# plot transitions and transversions
-jpeg("data_summary/LUSC_titv.jpg")
-maf_titv <- titv(maf = maf, plot = FALSE, useSyn = TRUE)
-plotTiTv(res = maf_titv)
-dev.off()
+  # sample summary
+  getSampleSummary(maf)
+  # maf summary plot
+  jpeg(paste0("data_summary/", noquote(cancer), "_mafSummary.jpg"))
+  plotmafSummary(maf = maf, rmOutlier = TRUE, addStat = 'median', dashboard = TRUE)
+  dev.off()
+  # oncoplot
+  jpeg(paste0("data_summary/", noquote(cancer), "_oncoplot.jpg"))
+  oncoplot(maf = maf, top = 10, removeNonMutated = TRUE)
+  dev.off()
+  # plot transitions and transversions
+  jpeg(paste0("data_summary/", noquote(cancer), "_titv.jpg"))
+  maf_titv <- titv(maf = maf, plot = FALSE, useSyn = TRUE)
+  plotTiTv(res = maf_titv)
+  dev.off()
+}
 
-# apply function across all cancers
+# test function
+create_maf("LUSC")
 
-dir.create("data_summary")
-dir.create("maf")
+#### apply function ####
 
 cancers <- c("LUSC", "PAAD", "BRCA", "PRAD", "READ", "COAD", "OV", "KIRC", "HNSC")
+
 
