@@ -8,7 +8,7 @@ library(tidyverse)
 
 #### assess data availability ####
 
-sink("data_info.txt", append = TRUE)
+sink("data_summary/data_info.txt", append = TRUE)
 sessionInfo()
 print("LUSC, lung (NSCLC/non-small cell lung cancer, SCC/squamous-cell carcinoma is the histologic type)")
 TCGAbiolinks:::getProjectSummary("TCGA-LUSC")
@@ -32,40 +32,46 @@ sink()
 
 #### obtain variant calling + clinical data ####
 
-# download nucleotide variant data
+# define data download and assessment function
+
+# download nucleotide variant data (if data already downloaded, reads in data)
 query_maf <- GDCquery_Maf("LUSC", directory = "GDCdata", pipelines = "mutect2", save.csv = TRUE)
 # use mutect2: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/DNA_Seq_Variant_Calling_Pipeline/#pipeline-descriptions
 
 # extract barcodes from maf query
 barcodes <- sort(query_maf$Tumor_Sample_Barcode) %>%
   unique
-#str_trunc(barcodes, 12, side = "right", ellipsis = "")
-
 # download clinical data 
 clinical <- GDCquery_clinic(project = "TCGA-LUSC", type = "clinical")
-
 # extract barcodes from clinical data
 sub_id <- sort(clinical$submitter_id) %>%
   unique()
 clinical <- rename(clinical, Tumor_Sample_Barcode = submitter_id)
-
-# create maf object with clinical data
+# create maf object with clinical data (defaults to only somatic mutations)
 maf <- read.maf(query_maf, clinicalData = clinical, useAll = FALSE)
-# defaults to only somatic mutations
-
-#### summarize data ####
+# save maf data to file
+write.mafSummary(maf, basename = "maf/LUSC")
 
 # sample summary
 getSampleSummary(maf)
-# save maf data to file
-write.mafSummary(maf, basename = "LUSC")
-
-#### canned visualizations ####
-
-# maf summary
+# maf summary plot
+jpeg("data_summary/LUSC_mafSummary.jpg")
 plotmafSummary(maf = maf, rmOutlier = TRUE, addStat = 'median', dashboard = TRUE)
+dev.off()
 # oncoplot
+jpeg("data_summary/LUSC_oncoplot.jpg")
 oncoplot(maf = maf, top = 10, removeNonMutated = TRUE)
-# transitions and transversions
+dev.off()
+# plot transitions and transversions
+jpeg("data_summary/LUSC_titv.jpg")
 maf_titv <- titv(maf = maf, plot = FALSE, useSyn = TRUE)
 plotTiTv(res = maf_titv)
+dev.off()
+
+# apply function across all cancers
+
+dir.create("data_summary")
+dir.create("maf")
+
+cancers <- c("LUSC", "PAAD", "BRCA", "PRAD", "READ", "COAD", "OV", "KIRC", "HNSC")
+

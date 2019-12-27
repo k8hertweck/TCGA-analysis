@@ -1,5 +1,8 @@
 #### mt gene extraction ####
 
+# read in maf (variants + clinical)
+LUSC_maf <- read.maf("LUSC_maftools.maf")
+
 # mt genes
 
 # N-mt genes
