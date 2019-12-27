@@ -1,7 +1,10 @@
+# ignoring R project files
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+# ignoring data directory (created by boilerplate GDC commands)
 GDCdata/
+# ignoring symlinks to results (git treats as files, so no /)
 data_summary
 maf
