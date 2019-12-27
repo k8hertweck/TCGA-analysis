@@ -3,5 +3,5 @@
 .RData
 .Ruserdata
 GDCdata/
-data_summary/
-maf/
+data_summary
+maf
